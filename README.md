@@ -94,6 +94,44 @@ factory:
 
 **Note**: Frontend model configuration overrides these defaults per run.
 
+### Azure AI Foundry Configuration
+
+The plugin is built on DSPy + LiteLLM, so any LiteLLM-supported provider works. To
+use a Microsoft Azure AI Foundry project key against the v1 Responses endpoint
+(e.g. `https://<foundry>.services.ai.azure.com/api/projects/proj-default/openai/v1/responses`):
+
+**Global Model Config (UI) — recommended**
+
+| Field         | Value                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------- |
+| Model         | `azure/<your-deployment-name>` (e.g. `azure/gpt-4o`)                                   |
+| API Key       | Foundry project API key                                                                |
+| API Base      | `https://<foundry>.services.ai.azure.com/api/projects/proj-default`                    |
+| API Version   | `2024-10-21` (or whichever Azure OpenAI API version your deployment supports)          |
+| RAG Embed Model | `azure/<your-embeddings-deployment>` if using CTI / RAG with a Foundry embedding model |
+
+LiteLLM will construct the final URL as
+`{api_base}/openai/deployments/{deployment}/chat/completions?api-version={api_version}`.
+If your Foundry project only exposes the `/openai/v1/responses` endpoint, point the
+OpenAI-compatible path directly: set **Model** to `openai/<deployment>` and **API Base**
+to `https://<foundry>.services.ai.azure.com/api/projects/proj-default/openai/v1`.
+
+**conf/default.yml equivalent**
+
+```yaml
+llm:
+  model: azure/gpt-4o
+  api_key: <FOUNDRY_KEY>
+  api_base: https://<foundry>.services.ai.azure.com/api/projects/proj-default
+  api_version: 2024-10-21
+```
+
+**Remote deployment**
+
+MLflow is bound to `127.0.0.1:5000` on the Caldera host in `hook.py` — no inbound
+port is exposed and all LLM traffic is outbound to Foundry. No other changes are
+required beyond the model config above.
+
 ### RAG Configuration
 
 When using CTI enhancement:

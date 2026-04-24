@@ -116,6 +116,32 @@
           </div>
 
           <div class="field">
+            <label class="label">API Base (optional)</label>
+            <div class="control">
+              <input
+                class="input"
+                type="text"
+                v-model="globalConfig.apiBase"
+                placeholder="https://<foundry>.services.ai.azure.com/api/projects/proj-default"
+              />
+            </div>
+            <p class="help">Set for Azure AI Foundry or any OpenAI-compatible endpoint. Leave blank for OpenAI/Anthropic.</p>
+          </div>
+
+          <div class="field">
+            <label class="label">API Version (optional)</label>
+            <div class="control">
+              <input
+                class="input"
+                type="text"
+                v-model="globalConfig.apiVersion"
+                placeholder="2024-10-21"
+              />
+            </div>
+            <p class="help">Required for Azure AI Foundry / Azure OpenAI.</p>
+          </div>
+
+          <div class="field">
             <label class="label">Max Tool Calls</label>
             <div class="control">
               <input
@@ -403,6 +429,8 @@ async function handleCustomSubmit() {
         config: {
           model: globalConfig.modelName,
           api_key: globalConfig.apiKey,
+          api_base: globalConfig.apiBase || undefined,
+          api_version: globalConfig.apiVersion || undefined,
           temperature: globalConfig.temperature,
           max_tokens: globalConfig.maxTokens,
           max_tool_calls: globalConfig.maxToolCalls
@@ -457,6 +485,8 @@ function loadConfig() {
         temperature: parsed.temperature,
         hasApiKey: !!parsed.apiKey,
         apiKeyLength: parsed.apiKey?.length || 0,
+        apiBase: parsed.apiBase,
+        apiVersion: parsed.apiVersion,
         maxToolCalls: parsed.maxToolCalls,
         maxTokens: parsed.maxTokens,
         ragEmbedModel: parsed.ragEmbedModel,
@@ -498,6 +528,8 @@ const globalConfig = reactive({
   modelName: savedConfig?.modelName || 'gpt-4o',
   temperature: savedConfig?.temperature ?? 0.5,
   apiKey: savedConfig?.apiKey || '',
+  apiBase: savedConfig?.apiBase || '',
+  apiVersion: savedConfig?.apiVersion || '',
   maxToolCalls: savedConfig?.maxToolCalls || 5,
   maxTokens: savedConfig?.maxTokens || 10000,
   ragEmbedModel: savedConfig?.ragEmbedModel || 'openai/text-embedding-3-small',

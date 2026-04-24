@@ -36,6 +36,11 @@ class MCPService(BaseService):
             "temperature": model_config.get("temperature"),
             "max_tokens": model_config.get("max_tokens"),
             "max_tool_calls": model_config.get("max_tool_calls"),
+            # Azure / Azure AI Foundry / OpenAI-compatible endpoint fields
+            "api_base": model_config.get("api_base"),
+            "api_version": model_config.get("api_version"),
+            "provider": model_config.get("provider"),
+            "extra_headers": model_config.get("extra_headers"),
         }
         return lm
 
@@ -60,7 +65,8 @@ class MCPService(BaseService):
         ))
         return {"run_id": run_id}
 
-    def _build_rag_service_from_files(self, filenames, api_key: str, embed_model: str, topk: int):
+    def _build_rag_service_from_files(self, filenames, api_key: str, embed_model: str, topk: int,
+                                       api_base: str = None, api_version: str = None):
         base_dir = Path(__file__).resolve().parent.parent / "data"
         bundles = []
         for name in filenames or []:
@@ -70,7 +76,7 @@ class MCPService(BaseService):
             with open(path, "r", encoding="utf-8") as f:
                 bundles.append(json.load(f))
 
-        rag = RAGService(api_key=api_key, log=self.log)
+        rag = RAGService(api_key=api_key, log=self.log, api_base=api_base, api_version=api_version)
         if topk:
             rag.topk_objects_to_retrieve = int(topk)
         rag.initialize_from_bundles(bundles, embed_model=embed_model or 'openai/text-embedding-3-small')
@@ -89,12 +95,17 @@ class MCPService(BaseService):
                 # Configure LM globally if provided
                 if lm_obj and lm_obj.get("api_key"):
                     try:
-                        dspy.configure(lm=dspy.LM(
-                            model=lm_obj.get("model"),
-                            api_key=lm_obj.get("api_key"),
-                            temperature=lm_obj.get("temperature"),
-                            max_tokens=lm_obj.get("max_tokens"),
-                        ))
+                        lm_kwargs = {
+                            "model": lm_obj.get("model"),
+                            "api_key": lm_obj.get("api_key"),
+                            "temperature": lm_obj.get("temperature"),
+                            "max_tokens": lm_obj.get("max_tokens"),
+                        }
+                        # Forward Azure/Foundry/OpenAI-compatible fields when present
+                        for k in ("api_base", "api_version", "provider", "extra_headers"):
+                            if lm_obj.get(k):
+                                lm_kwargs[k] = lm_obj.get(k)
+                        dspy.configure(lm=dspy.LM(**lm_kwargs))
                     except Exception as e:
                         self.log.warning(f"[MCP] Failed to configure LM: {e}")
 
@@ -113,7 +124,9 @@ class MCPService(BaseService):
                             filenames=rag_files,
                             api_key=(lm_obj or {}).get("api_key"),
                             embed_model=rag_embed_model,
-                            topk=rag_topk or 5
+                            topk=rag_topk or 5,
+                            api_base=(lm_obj or {}).get("api_base"),
+                            api_version=(lm_obj or {}).get("api_version"),
                         )
                         rag_context = rag.get_context_for_task(prompt)
                         # Log RAG retrieval process (use different namespace to avoid collision with LLM thoughts)

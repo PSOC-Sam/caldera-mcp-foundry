@@ -8,9 +8,21 @@ def configure_dspy_from_env():
     api_key = os.environ.get('DSPY_API_KEY', '')
     temperature = float(os.environ.get('DSPY_TEMPERATURE', '0.5'))
     max_tokens = int(os.environ.get('DSPY_MAX_TOKENS', '10000'))
+    api_base = os.environ.get('DSPY_API_BASE') or None
+    api_version = os.environ.get('DSPY_API_VERSION') or None
 
     if api_key:  # Only configure if we have an API key
-        lm = dspy.LM(model=model, api_key=api_key, temperature=temperature, max_tokens=max_tokens)
+        lm_kwargs = {
+            "model": model,
+            "api_key": api_key,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if api_base:
+            lm_kwargs["api_base"] = api_base
+        if api_version:
+            lm_kwargs["api_version"] = api_version
+        lm = dspy.LM(**lm_kwargs)
         dspy.configure(lm=lm)
 
 configure_dspy_from_env()
@@ -28,7 +40,7 @@ class IdentifyTechnologies(dspy.Signature):
     For windows, the basic shell interpreter is powershell.exe.
     For linux, the basic shell interpreter is bash.
     """
-    
+
     description: str = dspy.InputField()
     platform: str = dspy.InputField()
     technologies: list[str] = dspy.OutputField()
@@ -52,4 +64,4 @@ class CreateCommand(dspy.Module):
         ranked_approaches = self.rank_approaches(description=description, technologies=identified_technologies)
         full_command = self.create_full_command(technologies=identified_technologies, approaches=ranked_approaches)
         return full_command.command
-        
+

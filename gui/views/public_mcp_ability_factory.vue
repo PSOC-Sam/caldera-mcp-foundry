@@ -318,6 +318,8 @@ async function handleSubmit() {
         model: globalConfig.modelName,
         temperature: globalConfig.temperature,
         api_key: globalConfig.apiKey,
+        api_base: globalConfig.apiBase || undefined,
+        api_version: globalConfig.apiVersion || undefined,
         max_tool_calls: globalConfig.maxToolCalls,
         max_tokens: globalConfig.maxTokens,
         rag_files: selectedRag.value,

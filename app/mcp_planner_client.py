@@ -33,8 +33,11 @@ def build_lm_from_dict(settings: dict) -> dspy.LM:
     lm_kwargs = {
         "model": settings.get("model") or "gpt-4o",
         "api_key": api_key,
-        "api_base": settings.get("api_base"),
     }
+    # Optional Azure/Foundry/OpenAI-compatible endpoint fields
+    for k in ("api_base", "api_version", "provider", "extra_headers"):
+        if settings.get(k):
+            lm_kwargs[k] = settings.get(k)
     # Optional params if provided
     if settings.get("temperature") is not None:
         lm_kwargs["temperature"] = settings.get("temperature")
@@ -58,6 +61,13 @@ def get_env(lm_settings=None):
         env['DSPY_API_KEY'] = str(lm_settings.get('api_key') or '')
         env['DSPY_TEMPERATURE'] = str(lm_settings.get('temperature') or 0.5)
         env['DSPY_MAX_TOKENS'] = str(lm_settings.get('max_tokens') or 10000)
+        # Azure AI Foundry / Azure OpenAI / OpenAI-compatible endpoints
+        if lm_settings.get('api_base'):
+            env['DSPY_API_BASE'] = str(lm_settings.get('api_base'))
+        if lm_settings.get('api_version'):
+            env['DSPY_API_VERSION'] = str(lm_settings.get('api_version'))
+        if lm_settings.get('provider'):
+            env['DSPY_PROVIDER'] = str(lm_settings.get('provider'))
 
     return env
 
@@ -125,7 +135,7 @@ def format_rag_context(rag_context):
 async def run(adversary_emulation_task: str, lm_obj=None, rag_context=None, run_id=None):
     """
     lm_obj can be:
-      - a dict with keys like model, api_key, api_base, temperature, max_tokens, offline
+      - a dict with keys like model, api_key, api_base, api_version, temperature, max_tokens, offline
       - a dspy.LM instance
       - None, to fall back to config from default.yml
     """

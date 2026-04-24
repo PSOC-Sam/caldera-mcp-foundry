@@ -33,9 +33,12 @@ def configure_llm(llm_config, use_mock=False):
     lm = {
         "model": llm_config.get("model", "gpt-4o"),
         "api_key": llm_config.get("api_key", ""),
-        "api_base": llm_config.get("api_base")
+        "api_base": llm_config.get("api_base"),
+        "api_version": llm_config.get("api_version"),
+        "provider": llm_config.get("provider"),
+        "extra_headers": llm_config.get("extra_headers"),
     }
-    
+
     dspy.configure(lm=lm)
 
 def get_env(lm_settings=None):
@@ -53,6 +56,13 @@ def get_env(lm_settings=None):
         env['DSPY_API_KEY'] = str(lm_settings.get('api_key') or '')
         env['DSPY_TEMPERATURE'] = str(lm_settings.get('temperature') or 0.5)
         env['DSPY_MAX_TOKENS'] = str(lm_settings.get('max_tokens') or 10000)
+        # Azure AI Foundry / Azure OpenAI / OpenAI-compatible endpoints
+        if lm_settings.get('api_base'):
+            env['DSPY_API_BASE'] = str(lm_settings.get('api_base'))
+        if lm_settings.get('api_version'):
+            env['DSPY_API_VERSION'] = str(lm_settings.get('api_version'))
+        if lm_settings.get('provider'):
+            env['DSPY_PROVIDER'] = str(lm_settings.get('provider'))
 
     return env
 
@@ -106,22 +116,22 @@ def format_rag_context(rag_context):
     """Format RAG context into a string for the DSPy signature."""
     if not rag_context:
         return "No CTI context available."
-    
+
     formatted_parts = []
-    
+
     # Add search results summary
     if "search_results" in rag_context:
         formatted_parts.append("Relevant CTI findings:")
         for i, result in enumerate(rag_context["search_results"][:3], 1):
             formatted_parts.append(f"{i}. {result}")
-    
+
     # Add detailed context
     if "detailed_context" in rag_context:
         formatted_parts.append("\nDetailed CTI Information:")
         for ctx in rag_context["detailed_context"]:
             formatted_parts.append(f"\n{ctx['name']}:")
             formatted_parts.append(f"{ctx['description']}")
-    
+
     return "\n".join(formatted_parts)
 
 async def run(adversary_emulation_task: str, lm_obj = None, rag_context=None, run_id=None):
@@ -135,6 +145,10 @@ async def run(adversary_emulation_task: str, lm_obj = None, rag_context=None, ru
             "api_key": lm_obj_safe.get("api_key") or "",
             "temperature": lm_obj_safe.get("temperature") or 0.5,
             "max_tokens": lm_obj_safe.get("max_tokens") or 10000,
+            "api_base": lm_obj_safe.get("api_base"),
+            "api_version": lm_obj_safe.get("api_version"),
+            "provider": lm_obj_safe.get("provider"),
+            "extra_headers": lm_obj_safe.get("extra_headers"),
         }
         max_tool_calls = lm_obj_safe.get("max_tool_calls") or 5
     else:
@@ -144,6 +158,10 @@ async def run(adversary_emulation_task: str, lm_obj = None, rag_context=None, ru
             "api_key": llm_config.get("api_key") or "",
             "temperature": llm_config.get("temperature") or 0.5,
             "max_tokens": llm_config.get("max_tokens") or 10000,
+            "api_base": llm_config.get("api_base"),
+            "api_version": llm_config.get("api_version"),
+            "provider": llm_config.get("provider"),
+            "extra_headers": llm_config.get("extra_headers"),
         }
         max_tool_calls = llm_config.get("max_tool_calls") or 5
 
@@ -190,12 +208,15 @@ async def run(adversary_emulation_task: str, lm_obj = None, rag_context=None, ru
                 tools = await session.list_tools()
 
                 # Use context to set LM for this task/run
-                with dspy.context(lm=dspy.LM(
-                    lm_settings['model'],
-                    api_key=lm_settings['api_key'],
-                    temperature=lm_settings['temperature'],
-                    max_tokens=lm_settings['max_tokens']
-                )):
+                lm_kwargs = {
+                    "api_key": lm_settings['api_key'],
+                    "temperature": lm_settings['temperature'],
+                    "max_tokens": lm_settings['max_tokens'],
+                }
+                for k in ("api_base", "api_version", "provider", "extra_headers"):
+                    if lm_settings.get(k):
+                        lm_kwargs[k] = lm_settings.get(k)
+                with dspy.context(lm=dspy.LM(lm_settings['model'], **lm_kwargs)):
                     mlflow.set_tag("stage", "creating DSPy ReAct instance")
                     dspy_tools = [dspy.Tool.from_mcp_tool(session, tool) for tool in tools.tools]
 

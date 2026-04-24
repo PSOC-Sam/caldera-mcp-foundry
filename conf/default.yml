@@ -1,10 +1,19 @@
 ---
 llm:
+  # For Azure AI Foundry, prefix the model name with "azure/" and set
+  # api_base + api_version below. Example:
+  #   model: azure/gpt-4o
+  #   api_base: https://<foundry>.services.ai.azure.com/api/projects/proj-default
+  #   api_version: 2024-10-21
   model: gpt-4o
-  api_key: 
+  api_key:
+  api_base:
+  api_version:
   offline: true
   use_mock: false
 factory:
   model: gpt-4o
-  api_key: 
+  api_key:
+  api_base:
+  api_version:
   temperature: 0.4
