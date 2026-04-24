@@ -5,7 +5,7 @@ llm:
   #   model: azure/gpt-4o
   #   api_base: https://<foundry>.services.ai.azure.com/api/projects/proj-default
   #   api_version: 2024-10-21
-  model: gpt-4o
+  model: openai/gpt-4.1-mini
   api_key:
   api_base:
   api_version:
