@@ -122,23 +122,10 @@
                 class="input"
                 type="text"
                 v-model="globalConfig.apiBase"
-                placeholder="https://<foundry>.services.ai.azure.com/api/projects/proj-default"
+                placeholder="https://<foundry-name>.services.ai.azure.com/api/projects/proj-default/openai/v1/"
               />
             </div>
-            <p class="help">Set for Azure AI Foundry or any OpenAI-compatible endpoint. Leave blank for OpenAI/Anthropic.</p>
-          </div>
-
-          <div class="field">
-            <label class="label">API Version (optional)</label>
-            <div class="control">
-              <input
-                class="input"
-                type="text"
-                v-model="globalConfig.apiVersion"
-                placeholder="2024-10-21"
-              />
-            </div>
-            <p class="help">Required for Azure AI Foundry / Azure OpenAI.</p>
+            <p class="help">Set for Azure AI Foundry or any OpenAI-compatible endpoint. Leave blank for OpenAI/Anthropic. If copying from the Azure Foundry Target URI, remove the trailing <code>/responses</code> segment.</p>
           </div>
 
           <div class="field">
@@ -525,10 +512,10 @@ function saveConfig(config) {
 // Load from localStorage if available, otherwise use defaults
 const savedConfig = loadConfig()
 const globalConfig = reactive({
-  modelName: savedConfig?.modelName || 'gpt-4o',
+  modelName: savedConfig?.modelName || 'openai/gpt-4.1-mini',
   temperature: savedConfig?.temperature ?? 0.5,
   apiKey: savedConfig?.apiKey || '',
-  apiBase: savedConfig?.apiBase || '',
+  apiBase: savedConfig?.apiBase || 'https://<foundry-name>.services.ai.azure.com/api/projects/proj-default/openai/v1/',
   apiVersion: savedConfig?.apiVersion || '',
   maxToolCalls: savedConfig?.maxToolCalls || 5,
   maxTokens: savedConfig?.maxTokens || 10000,
